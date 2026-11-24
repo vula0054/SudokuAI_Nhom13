@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sudoku CSP Solver</title>
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--ink:#1b2437;--muted:#667085;--line:#dfe3ee;--pri:#3b5bdb;--pri-d:#2f49b5;--pri-l:#edf1ff;
+--ok:#0f7b57;--ok-l:#e6f6ef;--warn:#9a5b00;--warn-l:#fff4db;--err:#b42318;--err-l:#fdecea;--cs:52px}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#1c2a55,#3b5bdb);color:#fff;padding:18px 28px}
+header h1{margin:0;font-size:22px;letter-spacing:.2px}header p{margin:3px 0 0;opacity:.85;font-size:13.5px}
+main{display:grid;grid-template-columns:minmax(0,auto) minmax(340px,1fr);gap:20px;padding:20px 28px;max-width:1280px;margin:0 auto;align-items:start}
+@media(max-width:980px){main{grid-template-columns:1fr;padding:14px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 1px 2px #1b24370d}
+.card h3{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}
+.card h3 i{font-style:normal;background:var(--pri);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+label.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px;font-weight:600}
+select,input[type=text]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);min-width:0}
+select:focus,input[type=text]:focus{outline:2px solid var(--pri-l);border-color:var(--pri)}
+button{font:inherit;font-weight:600;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.12s}
+button:hover:not(:disabled){border-color:var(--pri);color:var(--pri)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}button.pri:hover:not(:disabled){background:var(--pri-d);color:#fff}
+button.sm{padding:6px 10px;font-size:13px}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+/* bảng */
+#boardWrap{display:flex;justify-content:center;padding:6px 0}
+#board{display:grid;border:3px solid var(--ink);border-radius:6px;background:#fff;touch-action:manipulation}
+.cell{position:relative;width:var(--cs);height:var(--cs);border-right:1px solid #cfd5e3;border-bottom:1px solid #cfd5e3}
+.cell::before{content:"";position:absolute;inset:0;pointer-events:none;background:transparent;transition:background .1s}
+.cell.peer::before{background:rgba(59,91,219,.09)}.cell.same::before{background:rgba(59,91,219,.22)}.cell.sel::before{background:rgba(59,91,219,.34)}
+.cell.flash::before{background:rgba(245,158,11,.45)}.cell.unsure{box-shadow:inset 0 0 0 3px #f59e0b}
+.cell input{position:relative;z-index:1;width:100%;height:100%;border:0;background:transparent;text-align:center;font:600 calc(var(--cs)*.5)/1 system-ui,sans-serif;color:var(--pri);padding:0;outline:0;caret-color:transparent;cursor:pointer}
+.cell input.g{color:var(--ink);font-weight:800}.cell input.a{color:#d9480f}.cell input.s{color:var(--ok)}
+.cg{position:absolute;inset:3px;pointer-events:none;border:0 dashed #566079;z-index:2}
+.sum{position:absolute;top:2px;left:4px;z-index:3;font-size:calc(var(--cs)*.21);font-weight:700;color:#475467;line-height:1;background:#ffffffd9;padding:0 2px;border-radius:3px}
+#boardWrap.over #board{outline:3px dashed var(--pri);outline-offset:6px}
+/* trạng thái */
+#status{margin-top:12px;padding:10px 12px;border-radius:10px;font-weight:600;font-size:14px;background:var(--pri-l);color:var(--pri-d);min-height:42px}
+#status.ok{background:var(--ok-l);color:var(--ok)}#status.warn{background:var(--warn-l);color:var(--warn)}#status.err{background:var(--err-l);color:var(--err)}
+#status small{display:block;font-weight:500;opacity:.9}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend b{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+/* thống kê */
+#stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.tile{background:var(--bg);border-radius:10px;padding:8px 10px}.tile span{display:block;font-size:11.5px;color:var(--muted);font-weight:600}.tile b{font-size:17px}
+/* phát lại */
+input[type=range]{width:100%;accent-color:var(--pri)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+#log{height:260px;overflow:auto;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;background:#101828;color:#d0d5dd;padding:10px;border-radius:10px;white-space:pre}
+#log .A{color:#fdba74}#log .P{color:#93c5fd}#log .B{color:#fca5a5}#log .C{color:#86efac}
+#ev{max-height:560px;overflow:auto;font-size:13px}#ev h4{margin:14px 0 6px;font-size:13.5px}#ev p{margin:6px 0;color:var(--muted);font-size:12.5px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:right}th{background:var(--bg);font-weight:700}th:first-child,td:first-child{text-align:left}
+#preview{max-height:90px;border-radius:8px;border:1px solid var(--line);margin-top:8px;display:none}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:r .7s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes r{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header><h1>BỘ GIẢI SUDOKU TỰ ĐỘNG</h1><p>AC-3 · MAC · MRV — Classic, X, Anti-knight, Jigsaw, Killer · 4×4 / 9×9 / 16×16 · nhận dạng đề từ ảnh</p></header>
+<main>
+<!-- BẢNG -->
+<section class="card">
+  <div class="row">
+    <label class="f">Kích thước<select id="n" onchange="onCfg()"><option value="4">4×4</option><option value="9" selected>9×9</option><option value="16">16×16</option></select></label>
+    <label class="f">Biến thể<select id="v" onchange="onCfg()">
+      <option value="classic">Classic</option><option value="x">X-Sudoku</option><option value="antiknight">Anti-knight</option><option value="jigsaw">Jigsaw</option><option value="killer">Killer</option></select></label>
+    <label class="f">Độ khó<select id="lvl"><option>Dễ</option><option selected>Trung bình</option><option>Khó</option></select></label>
+    <button class="pri" id="bGen" onclick="gen()">🎲 Sinh đề mới</button>
+    <button onclick="clr()" title="Xóa toàn bộ lưới">Xóa lưới</button>
+  </div>
+  <p class="hint" id="vhint"></p>
+  <div id="boardWrap"><div id="board"></div></div>
+  <div id="status">Chọn cấu hình rồi bấm “Sinh đề mới”, hoặc tự nhập số / nạp từ ảnh.</div>
+  <div class="legend"><span><b style="background:#1b2437"></b>Gợi ý của đề</span><span><b style="background:#3b5bdb"></b>Bạn nhập</span><span><b style="background:#d9480f"></b>Bộ giải đang thử</span><span><b style="background:#0f7b57"></b>Nghiệm</span><span><b style="background:#f59e0b"></b>Ô đọc từ ảnh chưa chắc</span></div>
+</section>
+
+<!-- ĐIỀU KHIỂN -->
+<div class="col">
+  <section class="card"><h3><i>1</i>Nạp đề</h3>
+    <div class="row">
+      <button onclick="$('file').click()">🖼 Từ ảnh</button>
+      <button onclick="toggleStr()">📋 Dán chuỗi</button>
+    </div>
+    <input type="file" id="file" accept="image/*" hidden onchange="fromFile(this.files[0])">
+    <div class="row" id="strRow" style="display:none;margin-top:8px"><input type="text" id="load" placeholder="n² ký tự, “.” hoặc 0 là ô trống (16×16: cách nhau bằng dấu phẩy)" style="flex:1"><button class="sm pri" onclick="loadStr()">Nạp</button></div>
+    <img id="preview" alt="">
+    <p class="hint">Ảnh: chụp/cắt thẳng lưới số (hỗ trợ 4×4 và 9×9, có thể dán Ctrl+V hoặc kéo-thả vào lưới). Ô viền vàng là ô đọc chưa chắc — hãy sửa tay nếu sai. Killer/Jigsaw: sinh đề bằng nút “Sinh đề mới”.</p>
+  </section>
+
+  <section class="card"><h3><i>2</i>Kiểm tra &amp; Giải</h3>
+    <div class="row">
+      <label class="f" style="flex:1;min-width:180px">Thuật toán<select id="m">
+        <option value="auto" selected>Tự động (chọn theo đề)</option><option value="D">D · MAC + MRV (nhanh nhất)</option><option value="C">C · MAC</option><option value="B">B · AC-3 tiền xử lý + Backtracking</option><option value="A">A · Backtracking thuần</option></select></label>
+      <label class="f">Giới hạn<select id="tmo"><option value="5">5 giây</option><option value="10" selected>10 giây</option><option value="30">30 giây</option></select></label>
+    </div>
+    <p class="hint" id="sugg"></p>
+    <div class="row" style="margin-top:10px">
+      <button id="bChk" onclick="chk()">✔ Kiểm tra đề</button>
+      <button class="pri" id="bSolve" onclick="solve()">⚡ Giải</button>
+    </div>
+    <div id="stats"></div>
+    <p class="hint">Ở chế độ “Tự động”, hệ thống phân tích đề (qua AC-3) rồi chọn thuật toán phù hợp và nói rõ lý do. “Kiểm tra” cho biết đề hợp lệ (nghiệm duy nhất), mâu thuẫn, vô nghiệm hay nhiều nghiệm. “Giải” hiển thị nghiệm ngay và ghi lại các bước để xem lại.</p>
+  </section>
+
+  <section class="card"><h3><i>3</i>Xem lại từng bước giải</h3>
+    <div class="row">
+      <button class="sm" id="bPlay" onclick="togglePlay()" disabled>▶ Phát</button>
+      <button class="sm" id="bStep" onclick="stepBy(1)" disabled>Bước tiếp</button>
+      <button class="sm" id="bBack" onclick="stepBy(-1)" disabled>Lùi</button>
+      <button class="sm" id="bFin" onclick="showSol()" disabled>Hiện nghiệm</button>
+      <label class="f" style="margin-left:auto">Tốc độ<select id="spd" onchange="if(timer)play()"><option value="200">Chậm</option><option value="40" selected>Vừa</option><option value="5">Nhanh</option></select></label>
+    </div>
+    <input type="range" id="seek" min="0" max="0" value="0" disabled oninput="seek(+this.value)" style="margin-top:10px">
+    <div class="hint" id="pos">Chưa có bước nào — hãy bấm “Giải”.</div>
+  </section>
+
+  <section class="card">
+    <div class="tabs"><button class="on" onclick="tab(0,this)">Nhật ký suy luận</button><button onclick="tab(1,this);ev()">Kết quả đánh giá</button></div>
+    <div id="log">Nhật ký các bước sẽ hiện ở đây khi bạn phát lại.</div>
+    <div id="ev" style="display:none"></div>
+  </section>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let n=9,variant='classic',box=[],regions=null,cages=null,given=[],givVals=[],trace=[],sol=null,pos=0,timer=null,sel=-1,busy=false,TRUNC=false;
+const HINT={classic:'Mỗi hàng, cột, khối không trùng số.',x:'Như Classic, thêm hai đường chéo (tô vàng) cũng không trùng số.',antiknight:'Như Classic; hai ô cách nhau một nước đi quân Mã không được trùng số.',jigsaw:'Các khối là vùng hình dạng tự do (tô màu); mỗi vùng chứa đủ 1…n.',killer:'Số nhỏ ở góc là tổng của lồng (viền nét đứt); số trong lồng không lặp và cộng đúng tổng.'};
+async function post(u,d){const r=await fetch(u,{method:'POST',body:JSON.stringify(d)});let j;try{j=await r.json()}catch(e){throw 'Không kết nối được máy chủ (đã chạy python server.py chưa?)'}if(j.error)throw j.error;return j}
+const MNAME={A:'Backtracking thuần',B:'AC-3 tiền xử lý + Backtracking',C:'MAC',D:'MAC + MRV'};
+function showSuggest(sg){$('sugg').innerHTML=sg?`<b>Thuật toán tự chọn:</b> ${sg.method} · ${MNAME[sg.method]} — ${sg.reason}.`:''}
+async function refreshSuggest(){try{showSuggest((await post('/api/suggest',body())).suggest)}catch(e){showSuggest(null)}}
+function setStatus(t,html,sub){const s=$('status');s.className=t||'';s.innerHTML=html+(sub?`<small>${sub}</small>`:'')}
+function idle(){busy=false;['bGen','bChk','bSolve'].forEach(i=>$(i).disabled=false)}
+function setBusy(b,msg){busy=b;['bGen','bChk','bSolve'].forEach(i=>$(i).disabled=b);if(b)setStatus('',`<span class="spin"></span>${msg}`)}
+function cells(){return [...$('board').children]}
+function inp(i){return $('board').children[i].firstChild}
+
+/* ---------- cấu hình ---------- */
+function onCfg(){stop();let v=$('v').value,s=$('n');
+  [...s.options].forEach(o=>o.disabled=(v=='killer'&&o.value=='16'));if(v=='killer'&&s.value=='16')s.value='9';
+  n=+s.value;variant=v;$('vhint').textContent=HINT[v];regions=cages=null;given=[];resetRun();build();
+  setStatus('',v=='jigsaw'||v=='killer'?'Bấm “Sinh đề mới” để tạo '+(v=='killer'?'các lồng':'các vùng')+' cho '+n+'×'+n+'.':'Đã đổi cấu hình. Bấm “Sinh đề mới” hoặc nhập số.')}
+function boxOf(n){const b=Math.round(Math.sqrt(n));return Array.from({length:n*n},(_,i)=>((i/n|0)/b|0)*b+((i%n)/b|0))}
+
+/* ---------- vẽ bảng ---------- */
+function build(b){n=+$('n').value;variant=$('v').value;box=b||boxOf(n);
+  const cs=n==16?Math.min(36,Math.floor((Math.min(innerWidth-70,640))/16)):n==4?72:Math.min(52,Math.floor((Math.min(innerWidth-70,560))/9));
+  document.documentElement.style.setProperty('--cs',cs+'px');
+  const g=$('board');g.style.gridTemplateColumns=`repeat(${n},var(--cs))`;g.innerHTML='';
+  const cgOf=cages?(()=>{const a=Array(n*n);cages.forEach((c,k)=>c.cells.forEach(i=>a[i]=k));return a})():null;
+  for(let i=0;i<n*n;i++){const r=i/n|0,c=i%n,d=document.createElement('div');d.className='cell';
+    const dark=(j,ok)=>ok&&box[j]!=box[i];
+    d.style.borderRightWidth=dark(i+1,c<n-1)?'3px':c==n-1?'0':'1px';d.style.borderBottomWidth=dark(i+n,r<n-1)?'3px':r==n-1?'0':'1px';
+    if(dark(i+1,c<n-1))d.style.borderRightColor='#1b2437';if(dark(i+n,r<n-1))d.style.borderBottomColor='#1b2437';
+    if(variant=='jigsaw')d.style.background=`hsl(${(box[i]*67)%360},70%,92%)`;
+    else if(variant=='x'&&(r==c||r+c==n-1))d.style.background='#fff2c9';
+    if(cgOf){const k=cgOf[i],df=(j,ok)=>ok&&cgOf[j]!=k?1.5:0;const e=document.createElement('div');e.className='cg';
+      e.style.borderTopWidth=(r==0?1.5:df(i-n,true))+'px';e.style.borderBottomWidth=(r==n-1?1.5:df(i+n,true))+'px';
+      e.style.borderLeftWidth=(c==0?1.5:df(i-1,true))+'px';e.style.borderRightWidth=(c==n-1?1.5:df(i+1,true))+'px';
+      if(Math.min(...cages[k].cells)==i){const s=document.createElement('span');s.className='sum';s.textContent=cages[k].sum;d.appendChild(s)}d.appendChild(e)}
+    const e=document.createElement('input');e.inputMode='numeric';e.maxLength=2;e.autocomplete='off';
+    e.onfocus=()=>select(i);e.oninput=()=>onType(i,e);e.onkeydown=ev=>onKey(ev,i);d.prepend(e);g.appendChild(d)}
+  sel=-1}
+function select(i){sel=i;const v=inp(i).value,r=i/n|0,c=i%n;
+  cells().forEach((d,j)=>{const x=j/n|0,y=j%n;d.classList.toggle('sel',j==i);
+    d.classList.toggle('same',j!=i&&v!==''&&d.firstChild.value===v);
+    d.classList.toggle('peer',j!=i&&(x==r||y==c||box[j]==box[i])&&!(v!==''&&d.firstChild.value===v))})}
+function onType(i,e){let t=e.value.replace(/\D/g,'');
+  if(n<=9){t=t.slice(-1);if(t&&(+t<1||+t>n))t=''}else{t=t.slice(-2);if(t&&(+t<1||+t>16))t=t.slice(-1)==='0'?'':t.slice(-1)}
+  e.value=t;if(given[i]&&!t)given[i]=0;e.className=t&&given[i]?'g':'';select(i)}
+function onKey(ev,i){const k=ev.key,r=i/n|0,c=i%n;let j=-1;
+  if(k=='ArrowRight')j=c<n-1?i+1:i;else if(k=='ArrowLeft')j=c>0?i-1:i;else if(k=='ArrowDown')j=r<n-1?i+n:i;else if(k=='ArrowUp')j=r>0?i-n:i;
+  else if(k=='Backspace'||k=='Delete'){inp(i).value='';inp(i).className='';select(i);ev.preventDefault();return}
+  if(j>=0){ev.preventDefault();inp(j).focus()}}
+function getGrid(){return cells().map(d=>+d.firstChild.value||0)}
+function render(vals,mode){cells().forEach((d,i)=>{const e=d.firstChild;e.value=vals[i]||'';e.className=!vals[i]?'':given[i]?'g':mode=='sol'?'s':'a';d.classList.remove('unsure')});if(sel>=0)select(sel)}
+function mark(){const g=getGrid();given=g.map(x=>x?1:0);cells().forEach((d,i)=>d.firstChild.className=g[i]?'g':'')}
+function resetRun(){$('sugg').textContent='';trace=[];sol=null;pos=0;TRUNC=false;$('stats').innerHTML='';$('log').innerHTML='Nhật ký các bước sẽ hiện ở đây khi bạn phát lại.';runUI()}
+function runUI(){const has=trace.length>0;['bPlay','bStep','bBack','bFin'].forEach(i=>$(i).disabled=!has&&!(i=='bFin'&&sol));
+  const s=$('seek');s.max=trace.length;s.value=pos;s.disabled=!has;$('bPlay').textContent=timer?'⏸ Dừng':'▶ Phát';
+  $('pos').textContent=has?`Bước ${pos}/${trace.length}${TRUNC?' (đã cắt bớt ở '+trace.length+' bước đầu)':''}`:(sol?'Nghiệm tìm được không cần tìm kiếm (không có bước nào để phát lại).':'Chưa có bước nào — hãy bấm “Giải”.')}
+
+/* ---------- nạp đề ---------- */
+function clr(){stop();given=[];resetRun();build(box);setStatus('','Đã xóa lưới.')}
+async function gen(){stop();setBusy(true,'Đang sinh đề…');
+  try{const j=await post('/api/generate',{n:+$('n').value,variant:$('v').value,level:$('lvl').value,seed:Math.random()*1e9|0});
+    regions=j.regions;cages=j.cages;resetRun();build(j.box);given=j.grid.map(x=>x?1:0);render(j.grid);showSuggest(j.suggest);
+    setStatus('ok','Đã sinh đề '+$('lvl').value.toLowerCase()+' '+n+'×'+n,j.grid.filter(x=>x).length+' ô gợi ý'+(j.cages?' · '+j.cages.length+' lồng':'')+'. Bấm “Kiểm tra” hoặc “Giải”.')}
+  catch(e){setStatus('err','Không sinh được đề',e)}idle()}
+function toggleStr(){const r=$('strRow');r.style.display=r.style.display=='none'?'flex':'none'}
+function needStruct(){const v=$('v').value;if((v=='jigsaw'||v=='killer')&&!(v=='jigsaw'?regions:cages)){return true}return false}
+function loadStr(){stop();let s=$('load').value.trim();if(!s)return setStatus('warn','Hãy dán chuỗi đề vào ô trước.');
+  const a=s.includes(',')?s.split(',').map(x=>x.trim()):[...s.replace(/[.\s_-]/g,'0')];
+  const k=Math.round(Math.sqrt(a.length));if(![4,9,16].includes(k)||k*k!=a.length)return setStatus('err','Độ dài chuỗi không hợp lệ',`Nhận ${a.length} ký tự; cần 16, 81 hoặc 256.`);
+  if(a.some(x=>!/^\d+$/.test(x)||+x>k))return setStatus('err','Chuỗi có ký tự không hợp lệ',`Mỗi ô là số 0–${k}.`);
+  if(variant=='jigsaw'||variant=='killer'){$('v').value='classic'}
+  $('n').value=k;onCfg();given=a.map(x=>+x?1:0);render(a.map(Number));setStatus('ok','Đã nạp đề '+k+'×'+k,a.filter(x=>+x).length+' gợi ý. Bấm “Kiểm tra” hoặc “Giải”.');refreshSuggest()}
+async function fromFile(f){if(!f)return;stop();$('file').value='';
+  if(!f.type.startsWith('image/'))return setStatus('err','Tệp không phải ảnh');
+  const k=+$('n').value;if(k==16)return setStatus('err','Nhận dạng ảnh chỉ hỗ trợ 4×4 và 9×9','Hãy chọn kích thước 4×4 hoặc 9×9.');
+  const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});
+  const pv=$('preview');pv.src=url;pv.style.display='block';setBusy(true,'Đang nhận dạng ảnh…');
+  try{const j=await post('/api/recognize',{image:url,n:k});
+    if(variant=='jigsaw'||variant=='killer')$('v').value='classic';onCfg();given=j.grid.map(x=>x?1:0);render(j.grid);showSuggest(j.suggest);
+    j.uncertain.forEach(i=>cells()[i].classList.add('unsure'));
+    const c=j.check,msg={ok:'đề hợp lệ, nghiệm duy nhất',multiple:'đề có nhiều nghiệm (có thể đọc thiếu/sai số)',conflict:'có mâu thuẫn (nhiều khả năng đọc sai số)',no_solution:'vô nghiệm (nhiều khả năng đọc sai số)',timeout:'quá thời gian kiểm tra'}[c.status];
+    setStatus(c.status=='ok'&&!j.uncertain.length?'ok':'warn',`Đọc được ${j.clues} gợi ý · ${msg}`,(j.found_grid?'':'Không thấy khung lưới, đã dùng cả ảnh. ')+(j.uncertain.length?`${j.uncertain.length} ô viền vàng chưa chắc — hãy đối chiếu với ảnh và sửa nếu sai.`:'Hãy đối chiếu nhanh với ảnh gốc.'))}
+  catch(e){setStatus('err','Không nhận dạng được ảnh',e)}busy=false;['bGen','bChk','bSolve'].forEach(i=>$(i).disabled=false)}
+['dragover','dragleave','drop'].forEach(t=>$('boardWrap').addEventListener(t,e=>{e.preventDefault();
+  $('boardWrap').classList.toggle('over',t=='dragover');if(t=='drop'&&e.dataTransfer.files[0])fromFile(e.dataTransfer.files[0])}));
+addEventListener('paste',e=>{const it=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'));if(it)fromFile(it.getAsFile())});
+
+/* ---------- kiểm tra / giải ---------- */
+function body(){return {n,variant,regions,cages,grid:getGrid(),method:$('m').value,timeout:+$('tmo').value}}
+async function chk(){stop();if(!getGrid().some(x=>x)&&variant!='killer')return setStatus('warn','Lưới đang trống','Hãy sinh đề, nhập số hoặc nạp ảnh trước.');
+  if(needStruct())return setStatus('warn','Thiếu thông tin biến thể','Hãy bấm “Sinh đề mới” để tạo '+(variant=='killer'?'lồng':'vùng')+'.');
+  setBusy(true,'Đang kiểm tra đề…');
+  try{const j=await post('/api/check',body());const m={ok:['ok','Đề hợp lệ: nghiệm duy nhất','Độ khó ước lượng: '+j.difficulty],conflict:['err','Đề mâu thuẫn ngay từ đầu','AC-3 phát hiện một ô không còn giá trị nào.'],
+    no_solution:['err','Đề vô nghiệm','Không có cách điền nào thỏa mọi ràng buộc.'],multiple:['warn','Đề có nhiều nghiệm','Tìm thấy ít nhất 2 nghiệm.'],timeout:['warn','Quá thời gian kiểm tra','Thử tăng giới hạn thời gian.']}[j.status];
+    idle();setStatus(...m)}
+  catch(e){idle();setStatus('err','Lỗi',e)}}
+async function solve(){stop();if(needStruct())return setStatus('warn','Thiếu thông tin biến thể','Hãy bấm “Sinh đề mới” để tạo '+(variant=='killer'?'lồng':'vùng')+'.');
+  if(!getGrid().some(x=>x)&&variant!='killer')return setStatus('warn','Lưới đang trống','Hãy sinh đề, nhập số hoặc nạp ảnh trước.');
+  mark();givVals=getGrid();resetRun();setBusy(true,$('m').value=='auto'?'Đang phân tích đề và tự chọn thuật toán…':'Đang giải bằng '+$('m').selectedOptions[0].text.split(' · ')[0]+'…');
+  try{const j=await post('/api/solve',body());idle();
+    trace=j.trace;sol=j.solution;pos=0;TRUNC=trace.length>=5000;const s=j.stats;
+    if(j.solved){render(sol,'sol');setStatus('ok','Đã giải xong trong '+s.ms+' ms bằng '+j.method+' · '+j.method_name+(j.auto?' (tự chọn)':''),(j.auto?j.reason+'. ':'')+'Nghiệm hiển thị màu xanh. Bấm “Phát” để xem bộ giải suy luận từng bước.')}
+    else setStatus(j.timeout?'warn':'err',j.timeout?'Quá thời gian giải':'Đề vô nghiệm',j.timeout?'Thử thuật toán D (MAC+MRV) hoặc tăng giới hạn.':'Không có cách điền nào thỏa mọi ràng buộc.');
+    $('stats').innerHTML=[['Thuật toán',j.method+(j.fallback?' (dự phòng)':'')],['Thời gian',s.ms+' ms'],['Lần gán',s.assign],['Quay lui',s.backtrack],['Lần revise',s.revise],['Giá trị bị loại',s.prune],['Độ khó',j.check.difficulty||({multiple:'Nhiều nghiệm',conflict:'Mâu thuẫn',no_solution:'Vô nghiệm',timeout:'—'}[j.check.status]||'—')]].map(([a,b])=>`<div class="tile"><span>${a}</span><b>${b}</b></div>`).join('');
+    runUI()}
+  catch(e){idle();setStatus('err','Không giải được',e)}}
+
+/* ---------- phát lại ---------- */
+const rc=i=>`(${(i/n|0)+1},${i%n+1})`;
+function line(e){const [t,i,v,by]=e;
+  return t=='ASSIGN'?`<span class="A">GÁN       ${rc(i)} = ${v}</span>\n`:t=='PRUNE'?`<span class="P">LOẠI      ${rc(i)} bỏ ${v} vì ${rc(by)} = ${v}</span>\n`:t=='CAGE'?`<span class="C">TỔNG LỒNG ${rc(i)} bỏ ${v} (lồng #${by+1})</span>\n`:`<span class="B">QUAY LUI  ${rc(i)} thử ${v} thất bại</span>\n`}
+function seek(k){stop();pos=k;const vals=givVals.slice();
+  for(let j=0;j<k;j++){const [t,i,v]=trace[j];if(t=='ASSIGN')vals[i]=v;else if(t=='BACKTRACK'&&!given[i])vals[i]=0}
+  render(vals,'run');$('log').innerHTML=trace.slice(0,k).map(line).join('');$('log').scrollTop=1e9;runUI()}
+function stepBy(d){stop();if(d<0){if(pos>0)seek(pos-1);return}applyNext();runUI()}
+function applyNext(){if(pos>=trace.length){stop();return false}const e=trace[pos++],[t,i,v]=e,c=cells()[i];
+  if(t=='ASSIGN'){c.firstChild.value=v;c.firstChild.className='a'}else if(t=='BACKTRACK'&&!given[i]){c.firstChild.value='';c.firstChild.className=''}
+  else{c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),180)}
+  const L=$('log');L.insertAdjacentHTML('beforeend',line(e));L.scrollTop=1e9;$('seek').value=pos;$('pos').textContent=`Bước ${pos}/${trace.length}${TRUNC?' (đã cắt bớt)':''}`;return true}
+function togglePlay(){if(timer){stop();runUI();return}if(pos>=trace.length||pos==0){startRun()}play()}
+function startRun(){pos=0;render(givVals,'run');$('log').innerHTML=''}
+function play(){clearInterval(timer);timer=setInterval(()=>{if(!applyNext()){stop();runUI()}},+$('spd').value);$('bPlay').textContent='⏸ Dừng'}
+function stop(){clearInterval(timer);timer=null;const b=$('bPlay');if(b)b.textContent='▶ Phát'}
+function showSol(){stop();if(sol){render(sol,'sol');pos=trace.length;runUI()}}
+
+/* ---------- đánh giá ---------- */
+function tab(k,b){document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('log').style.display=k?'none':'';$('ev').style.display=k?'':'none'}
+function tb(h,rows){return '<table><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</table>'}
+async function ev(){const j=await (await fetch('/api/eval')).json();if(j.error){$('ev').textContent=j.error;return}
+  const f=x=>typeof x=='number'?(+x.toFixed(3)):x;let h='';const I=j.invalid;
+  h+='<h4>1. Phát hiện đề không hợp lệ</h4>'+tb(['Precision','Recall','F1','Accuracy'],[[I.precision,I.recall,I.f1,I.acc].map(f)]);
+  h+=`<p>${I.n} đề: ${I.cm[0]+I.cm[2]} không hợp lệ (dương tính) và ${I.cm[1]+I.cm[3]} hợp lệ. TP=${I.cm[0]}, FP=${I.cm[1]}, FN=${I.cm[2]}, TN=${I.cm[3]}. Recall theo loại lỗi: ${Object.entries(I.recall_by_type).map(([k,v])=>k+'='+f(v)).join(', ')}.</p>`;
+  h+='<h4>2. Phân loại độ khó (ML)</h4><p>'+j.difficulty.model+'</p>'+tb(['Lớp','P','R','F1'],j.difficulty.per_class.map(r=>[r.cls,f(r.p),f(r.r),f(r.f1)]));
+  h+='<p>F1 macro = <b>'+f(j.difficulty.f1_macro)+'</b> · accuracy = '+f(j.difficulty.acc)+'<br>'+j.difficulty.note+'</p>';
+  h+='<h4>3. Neural (MLP) so với CSP</h4>'+tb(['Mô hình','Đúng từng ô','Lưới hợp lệ hoàn toàn'],[['MLP',f(j.neural.cell_acc),f(j.neural.grid_ok)],['CSP (MAC+MRV)',1,f(j.neural.csp_grid_ok)]]);
+  h+='<h4>4. Giải theo biến thể (D: MAC+MRV)</h4>'+tb(['Cấu hình','Số đề','Giải đúng','Duy nhất','Gán TB','ms TB'],j.variants.map(r=>[r.name,r.k,r.solved,r.unique,f(r.assign),f(r.ms)]));
+  if(j.vision)h+='<h4>5. Nhận dạng ảnh (ảnh tổng hợp)</h4>'+tb(['Cấu hình','Số ảnh','Đúng từng ô','Đúng cả lưới'],j.vision.map(r=>[r.name,r.k,f(r.cell_acc),r.grid_ok]));
+  $('ev').innerHTML=h}
+addEventListener('resize',()=>{if(!busy){const g=getGrid(),c=cells().map(d=>d.firstChild.className);build(box);cells().forEach((d,i)=>{d.firstChild.value=g[i]||'';d.firstChild.className=c[i]||''})}});
+$('vhint').textContent=HINT.classic;build();
+</script>
+</body>
+</html>

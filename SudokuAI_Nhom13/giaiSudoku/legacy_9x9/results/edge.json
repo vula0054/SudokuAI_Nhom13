@@ -1,0 +1,14 @@
+{
+ "xung đột ngay từ đề (hai số 5 cùng hàng)": {
+  "ac3_phat_hien": true,
+  "revise": 1
+ },
+ "vô nghiệm kiểu ép miền (8 số hàng 1 + số 9 ở ô (2,8))": {
+  "co_nghiem": false,
+  "backtrack": 0,
+  "assign": 0
+ },
+ "đề rỗng (nhiều nghiệm)": {
+  "so_nghiem_dem_den_2": 2
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "Dễ": {
+  "n": 30,
+  "solved_by_ac3": 30,
+  "mean_det": 1.0
+ },
+ "Trung bình": {
+  "n": 30,
+  "solved_by_ac3": 16,
+  "mean_det": 0.6408163265306123
+ },
+ "Khó": {
+  "n": 30,
+  "solved_by_ac3": 1,
+  "mean_det": 0.12515311848645183
+ },
+ "AI Escargot": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Inkala 2012": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Norvig #1": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Norvig #2": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Norvig #3": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Norvig #4": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Norvig #5": {
+  "n": 1,
+  "solved_by_ac3": 0,
+  "mean_det": 0.0
+ },
+ "Wikipedia": {
+  "n": 1,
+  "solved_by_ac3": 1,
+  "mean_det": 1.0
+ }
+}

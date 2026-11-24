@@ -1,0 +1,146 @@
+{
+ "invalid": {
+  "n": 498,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "acc": 1.0,
+  "cm": [
+   368,
+   0,
+   0,
+   130
+  ],
+  "recall_by_type": {
+   "conflict": 1.0,
+   "multiple": 1.0,
+   "no_solution": 1.0
+  }
+ },
+ "difficulty": {
+  "model": "Random Forest, 5-fold CV, n=500",
+  "f1_macro": 0.6003837620675181,
+  "acc": 0.602,
+  "per_class": [
+   {
+    "cls": "Dễ",
+    "p": 0.6686746987951807,
+    "r": 0.6646706586826348,
+    "f1": 0.6666666666666666
+   },
+   {
+    "cls": "Trung bình",
+    "p": 0.4472049689440994,
+    "r": 0.43373493975903615,
+    "f1": 0.44036697247706424
+   },
+   {
+    "cls": "Khó",
+    "p": 0.6820809248554913,
+    "r": 0.7065868263473054,
+    "f1": 0.6941176470588235
+   }
+  ],
+  "note": "Nhãn = tam phân vị của log10(số lần gán + 1) khi giải bằng backtracking thuần A (giới hạn 1 s/đề, nên chi phí bị chặn ở các đề rất khó). 8 đặc trưng: số gợi ý; trung bình và min số ứng viên ngây thơ mỗi ô trống; tỉ lệ ô trống chỉ có 1 ứng viên ngây thơ; tỉ lệ ô trống được AC-3 xác định hoàn toàn; min số gợi ý theo hàng; min theo cột; độ lệch chuẩn gợi ý theo hàng. Không dùng chi phí tìm kiếm làm đặc trưng."
+ },
+ "neural": {
+  "model": "MLP 810-256-256-729",
+  "train": 2200,
+  "test": 200,
+  "cell_acc": 0.15089463220675944,
+  "grid_ok": 0.0,
+  "csp_grid_ok": 1.0
+ },
+ "variants": [
+  {
+   "name": "Classic 4×4",
+   "k": 15,
+   "solved": "15/15",
+   "assign": 0.0,
+   "ms": 0.02453126667963564,
+   "unique": "15/15"
+  },
+  {
+   "name": "Classic 9×9",
+   "k": 20,
+   "solved": "20/20",
+   "assign": 69.7,
+   "ms": 1.8588339499956419,
+   "unique": "20/20"
+  },
+  {
+   "name": "X-Sudoku 9×9",
+   "k": 20,
+   "solved": "20/20",
+   "assign": 21.35,
+   "ms": 0.8542863499940268,
+   "unique": "20/20"
+  },
+  {
+   "name": "Anti-knight 9×9",
+   "k": 20,
+   "solved": "20/20",
+   "assign": 8.05,
+   "ms": 0.5429177999928925,
+   "unique": "20/20"
+  },
+  {
+   "name": "Jigsaw 9×9",
+   "k": 20,
+   "solved": "20/20",
+   "assign": 150.25,
+   "ms": 2.7250793500002146,
+   "unique": "20/20"
+  },
+  {
+   "name": "Classic 16×16",
+   "k": 5,
+   "solved": "5/5",
+   "assign": 2.2,
+   "ms": 1.9389260000252762,
+   "unique": "5/5"
+  },
+  {
+   "name": "Killer 4×4",
+   "k": 15,
+   "solved": "15/15",
+   "assign": 0.06666666666666667,
+   "ms": 0.05282273334614729,
+   "unique": "15/15"
+  },
+  {
+   "name": "Killer 9×9",
+   "k": 20,
+   "solved": "20/20",
+   "assign": 10.55,
+   "ms": 1.4099481999892305,
+   "unique": "20/20"
+  }
+ ],
+ "vision": [
+  {
+   "name": "9×9, ảnh sạch",
+   "k": 24,
+   "cell_acc": 1.0,
+   "grid_ok": "24/24"
+  },
+  {
+   "name": "9×9, méo phối cảnh + nhiễu",
+   "k": 24,
+   "cell_acc": 1.0,
+   "grid_ok": "24/24"
+  },
+  {
+   "name": "4×4, ảnh sạch",
+   "k": 12,
+   "cell_acc": 1.0,
+   "grid_ok": "12/12"
+  },
+  {
+   "name": "4×4, méo phối cảnh + nhiễu",
+   "k": 12,
+   "cell_acc": 1.0,
+   "grid_ok": "12/12"
+  }
+ ]
+}
